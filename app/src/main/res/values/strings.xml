@@ -1,0 +1,28 @@
+<resources>
+    <string name="app_name">TripPlanner</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="lbl_username">Username</string>
+    <string name="lbl_password">Password</string>
+    <string name="lbl_btn_login">Login</string>
+    <string name="lbl_btn_signup">Sign up</string>
+    <string name="lbl_fname">First Name</string>
+    <string name="lbl_lname">Last Name</string>
+    <string name="lbl_repeat_pw">Repeat Password</string>
+    <string name="lbl_btn_cancel">CANCEL</string>
+    <string name="lbl_iv_dp_desc">Select display picture</string>
+    <string name="lbl_signup">Step 1: Sign Up</string>
+    <string name="btn_save">SAVE </string>
+    <string name="lbl_login_header_text">Login</string>
+    <string name="lbl_edit_profile">Edit Profile</string>
+    <string name="lbl_btn_addTrip">ADD TRIP</string>
+    <string name="lbl_btn_view_trips">VIEW MY TRIPS</string>
+    <string name="lbl_create_trip">Create Trip</string>
+    <string name="lbl_trip_title">Trip Title</string>
+    <string name="lbl_trip_location">Trip Location</string>
+    <string name="lbl_btn_save_trip">Save Trip</string>
+    <string name="lbl_for_trip_members_list">Click To Add Trip Members:</string>
+    <string name="lbl_trip_item_join">join</string>
+    <string name="lbl_vp_logout"></string>
+</resources>

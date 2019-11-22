@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "989645062994",
+    "firebase_url": "https://tripplanner-5358c.firebaseio.com",
+    "project_id": "tripplanner-5358c",
+    "storage_bucket": "tripplanner-5358c.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:989645062994:android:94d710dcd8deb913f7f08b",
+        "android_client_info": {
+          "package_name": "com.example.tripplanner"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "989645062994-od197ojmr6o0dkd9957trnnf1jtds2at.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.tripplanner",
+            "certificate_hash": "779c1f28e2477474816c24ac6e063992301288fc"
+          }
+        },
+        {
+          "client_id": "989645062994-ti5ldhm3ifmvvd543tkkpvpddpuuuto8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDosqB1zR0KoSbAtrnXmoTLu5qNLiPL1gY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "989645062994-ti5ldhm3ifmvvd543tkkpvpddpuuuto8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
