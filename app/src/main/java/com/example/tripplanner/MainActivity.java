@@ -3,6 +3,7 @@ package com.example.tripplanner;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -13,7 +14,8 @@ public class MainActivity extends AppCompatActivity implements LoginFragment.OnF
         SignupFragment.OnFragmentInteractionListener,
 ProfileBuilderFragment.OnFragmentInteractionListener,
 ViewProfileFragment.OnFragmentInteractionListener,
-AddTripFragment.OnFragmentInteractionListener{
+AddTripFragment.OnFragmentInteractionListener,
+ViewTripFragment.OnFragmentInteractionListener{
 
     /** * Private attributes* **/
     public static final int REQ_LOAD_LOGIN_FRAGMENT = 100;
@@ -22,6 +24,7 @@ AddTripFragment.OnFragmentInteractionListener{
     public static final int REQ_LOAD_VIEW_PROFILE_FRAGMENT = 103;
     public static final int REQ_LOAD_UPDATE_FRAGMENT = 104;
     public static final int REQ_LOAD_ADD_TRIP_FRAGMENT = 105;
+    public static final int REQ_LOAD_VIEW_TRIP_FRAGMENT = 106;
     public static final int REQ_LOGIN_SUCCESSFUL = 200;
 
 
@@ -69,6 +72,13 @@ AddTripFragment.OnFragmentInteractionListener{
                 case REQ_LOAD_ADD_TRIP_FRAGMENT:
                     getSupportFragmentManager().beginTransaction()
                             .replace(R.id.mainActivity_container,new AddTripFragment(),"addTrip_fragment")
+                            .commit();
+                    break;
+
+                case REQ_LOAD_VIEW_TRIP_FRAGMENT:
+                    Trip trip = (Trip) msg.obj;
+                    getSupportFragmentManager().beginTransaction()
+                            .replace(R.id.mainActivity_container,new ViewTripFragment(trip),"viewTrip_fragment")
                             .commit();
                     break;
 
@@ -148,6 +158,13 @@ AddTripFragment.OnFragmentInteractionListener{
     }
 
     @Override
+    public void tripCardClicked(Trip trip) {
+        Message msg = handler.obtainMessage(REQ_LOAD_VIEW_TRIP_FRAGMENT);
+        msg.obj = trip;
+        msg.sendToTarget();
+    }
+
+    @Override
     public void onTripSaved() {
         Message msg = handler.obtainMessage(REQ_LOAD_VIEW_PROFILE_FRAGMENT);
         msg.sendToTarget();
@@ -158,5 +175,16 @@ AddTripFragment.OnFragmentInteractionListener{
         Message msg = handler.obtainMessage(REQ_LOAD_VIEW_PROFILE_FRAGMENT);
         msg.sendToTarget();
 
+    }
+
+    @Override
+    public void onFragmentInteraction(Uri uri) {
+
+    }
+
+    @Override
+    public void onBackButtonClicked() {
+        Message msg = handler.obtainMessage(REQ_LOAD_VIEW_PROFILE_FRAGMENT);
+        msg.sendToTarget();
     }
 }

@@ -25,4 +25,7 @@
     <string name="lbl_for_trip_members_list">Click To Add Trip Members:</string>
     <string name="lbl_trip_item_join">join</string>
     <string name="lbl_vp_logout"></string>
+    <string name="lbl_location">Location:</string>
+    <string name="lbl_chatRoom">Chatroom</string>
+    <string name="lbl_vt_send">Send</string>
 </resources>

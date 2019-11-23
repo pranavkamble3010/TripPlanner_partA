@@ -18,12 +18,11 @@ import java.util.List;
 public class TripsRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     private List<Trip> resources;
-    private List<String> memberOf;
+    private String username;
 
     public interface TripCardInteractionListener {
         void onJoinButtonClick(String tripTitle);
-        void onTripCardClick(String tripTitle);
-
+        void onTripCardClick(Trip trip);
     }
 
 
@@ -31,11 +30,11 @@ public class TripsRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.View
 
     public TripsRecyclerAdapter(List<Trip> resources,
                                 TripCardInteractionListener tripCardInteractionListener,
-                                List<String> memberOf) {
+                                String username) {
 
         this.resources = resources;
         this.tripCardInteractionListener = tripCardInteractionListener;
-        this.memberOf = memberOf;
+        this.username = username;
     }
 
     @NonNull
@@ -61,8 +60,8 @@ public class TripsRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.View
         tempMyHolder.lbl_tripLocation.setText(resources.get(position).getLocation());
         tempMyHolder.lbl_tripBy.setText(resources.get(position).getCreatedBy());
 
-        Log.d("TripsAdapter", "onBindViewHolder: "+memberOf.toString());
-        if(memberOf.contains(resources.get(position).getTitle())){
+
+        if(resources.get(position).getMembers().contains(username)){
             //Log.d("TripsAdapter", "onBindViewHolder: "+memberOf.toString());
             tempMyHolder.btn_join.setVisibility(View.INVISIBLE);
         }
@@ -76,20 +75,13 @@ public class TripsRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.View
             }
         });
 
+        //Set onClickListner on whole card view to view trip
         tempMyHolder.cardView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                Log.d("TripsAdapter", "OnClickListener: "+username);
                 tripCardInteractionListener.
-                        onTripCardClick(resources.get(tempMyHolder.getLayoutPosition()).getTitle());
-            }
-        });
-
-        //Set onClickListner on whole card view to view emails
-        tempMyHolder.cardView.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                tripCardInteractionListener.
-                        onJoinButtonClick(resources.get(tempMyHolder.getLayoutPosition()).getTitle());
+                        onTripCardClick(resources.get(tempMyHolder.getLayoutPosition()));
             }
         });
     }

@@ -25,15 +25,19 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -147,7 +151,7 @@ public class ViewProfileFragment extends Fragment implements TripsRecyclerAdapte
 
         tripsAdapter = new TripsRecyclerAdapter(trips,
                             this,
-                                                user.getTripsAddedTo());
+                                                user.getUsername());
 
         rv_trips.setLayoutManager(new LinearLayoutManager(getActivity()));
         rv_trips.setAdapter(tripsAdapter);
@@ -155,6 +159,8 @@ public class ViewProfileFragment extends Fragment implements TripsRecyclerAdapte
     }
 
     private void populateTrips() {
+
+        trips.removeAll(trips);
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection("trips")
                 .get()
@@ -220,12 +226,39 @@ public class ViewProfileFragment extends Fragment implements TripsRecyclerAdapte
 
     @Override
     public void onJoinButtonClick(String tripTitle) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        WriteBatch batch = db.batch();
+
+        //Add the trip in the user
+        DocumentReference userUpdateRef = db.collection("profiles").
+                document(user.getUsername());
+        batch.update(userUpdateRef, "tripsAddedTo", FieldValue.arrayUnion(tripTitle));
+
+
+        DocumentReference tripUpdateRef = db.collection("trips").
+                document(tripTitle);
+        batch.update(tripUpdateRef, "members", FieldValue.arrayUnion(user.getUsername()));
+
+
+        batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                if(task.isSuccessful()){
+                    Toast.makeText(getContext(), "Trip joined successfully!", Toast.LENGTH_SHORT).show();
+                    populateTrips();
+                }
+
+            }
+        });
 
     }
 
     @Override
-    public void onTripCardClick(String tripTitle) {
+    public void onTripCardClick(Trip trip) {
 
+        Log.d("viewProfileFrag", "onTripCardClick: "+trip.toString());
+
+        mListener.tripCardClicked(trip);
     }
 
     /**
@@ -243,5 +276,6 @@ public class ViewProfileFragment extends Fragment implements TripsRecyclerAdapte
         void editProfileClicked();
         void addTripClicked();
         void signoutClicked();
+        void tripCardClicked(Trip trip);
     }
 }

@@ -59,6 +59,8 @@ public class LoginFragment extends Fragment {
             @Override
             public void onClick(View view) {
                if(validate()){
+                   btn_login.setEnabled(false);
+                   btn_signUp.setEnabled(false);
                    login();
                }
             }
@@ -91,6 +93,9 @@ public class LoginFragment extends Fragment {
                             Log.w("Login", "signInWithEmail:failure", task.getException());
                             Toast.makeText(getActivity(), "Authentication failed.",
                                     Toast.LENGTH_SHORT).show();
+
+                            btn_login.setEnabled(true);
+                            btn_signUp.setEnabled(true);
                         }
 
                         // ...

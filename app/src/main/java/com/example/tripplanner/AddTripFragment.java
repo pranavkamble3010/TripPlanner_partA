@@ -45,8 +45,12 @@ import com.squareup.picasso.Picasso;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -207,6 +211,9 @@ public class AddTripFragment extends Fragment {
         trip.setLocation(txt_trip_location.getText().toString());
         trip.setImageUrl(imageUrl);
 
+        //Also add the initiator to the members list of the trip
+        trip.addMember(currentUser);
+
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection("trips")
                 .document(trip.getTitle())
@@ -241,6 +248,22 @@ public class AddTripFragment extends Fragment {
                                 FieldValue.arrayUnion(trip.getTitle()));
 
 
+                        //Create a chatroom with trips id
+                        List<Message> messages = new ArrayList<>();
+                        Message msg = new Message();
+                        msg.setSender(currentUser);
+                        msg.setContent("Welcome to "+trip.getTitle()+"!");
+                        msg.setMessageType("text");
+                        msg.setTimestamp(new Timestamp(new Date().getTime()).toString());
+                        messages.add(msg);
+                        Map<String, List<Message>> chatroomObj =  new HashMap<>();
+                        chatroomObj.put("messages",messages);
+                        DocumentReference chatRoomRef = db.collection("chatrooms").
+                                document(trip.getTitle());
+                        batch.set(chatRoomRef,chatroomObj);
+
+
+
                         batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
                             @Override
                             public void onComplete(@NonNull Task<Void> task) {
@@ -248,6 +271,8 @@ public class AddTripFragment extends Fragment {
                                 mListener.onTripSaved();
                             }
                         });
+
+
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
