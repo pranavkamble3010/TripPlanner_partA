@@ -28,4 +28,5 @@
     <string name="lbl_location">Location:</string>
     <string name="lbl_chatRoom">Chatroom</string>
     <string name="lbl_vt_send">Send</string>
+    <string name="lbl_alert_toJoinTrip">Please join the trip in order view the messages from other participants.</string>
 </resources>

@@ -69,13 +69,13 @@
 
     <Button
         android:id="@+id/btn_vt_join"
-        style="@android:style/Widget.DeviceDefault.Button.Borderless"
-        android:layout_width="64dp"
-        android:layout_height="40dp"
-        android:layout_marginTop="16dp"
+        style="@android:style/Widget.Material.Light.Button.Borderless.Small"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:layout_marginEnd="16dp"
-        android:background="#36595E5F"
         android:text="@string/lbl_trip_item_join"
+        android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
@@ -141,5 +141,20 @@
         android:textSize="14sp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/lbl_alertToJoinTrip"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginTop="128dp"
+        android:layout_marginEnd="32dp"
+        android:text="@string/lbl_alert_toJoinTrip"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView6" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

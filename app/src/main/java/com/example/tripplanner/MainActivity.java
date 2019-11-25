@@ -3,7 +3,6 @@ package com.example.tripplanner;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -178,8 +177,9 @@ ViewTripFragment.OnFragmentInteractionListener{
     }
 
     @Override
-    public void onFragmentInteraction(Uri uri) {
-
+    public void onTripLeftByCreator() {
+        Message msg = handler.obtainMessage(REQ_LOAD_VIEW_PROFILE_FRAGMENT);
+        msg.sendToTarget();
     }
 
     @Override

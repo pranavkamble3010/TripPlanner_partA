@@ -26,19 +26,19 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.common.util.Base64Utils;
 import com.google.android.gms.tasks.Continuation;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.WriteBatch;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -61,8 +61,9 @@ import java.util.List;
  */
 public class ViewTripFragment extends Fragment implements MessageRecyclerAdapter.MessageInteractionListener{
 
-    private static final int REQ_IMAGE_INTENT = 300;
+
     /**Private attributes**/
+    private static final int REQ_IMAGE_INTENT = 300;
 
     private OnFragmentInteractionListener mListener;
     private Trip trip;
@@ -84,6 +85,9 @@ public class ViewTripFragment extends Fragment implements MessageRecyclerAdapter
 
     private String currentUsername;
 
+    //To store snapshot listener which is used to detach if trip is left by the creator
+    private ListenerRegistration chatListnerResgistration;
+
     /**Private attributes end**/
 
     /**Private methods**/
@@ -96,13 +100,20 @@ public class ViewTripFragment extends Fragment implements MessageRecyclerAdapter
         lbl_vt_createdBy = getActivity().findViewById(R.id.lbl_vt_createdBy);
         lbl_vt_location = getActivity().findViewById(R.id.lbl_vt_tripLocation);
         lbl_vt_tripTitle = getActivity().findViewById(R.id.lbl_vt_tripTitle);
-        iv_vt_tripdp = getActivity().findViewById(R.id.iv_vt_dp);
+
         btn_send = getActivity().findViewById(R.id.btn_vt_send);
+        btn_join = getActivity().findViewById(R.id.btn_vt_join);
+        btn_back = getActivity().findViewById(R.id.btn_vt_back);
+        btn_attach = getActivity().findViewById(R.id.btn_vt_attachImage);
+
         txt_message = getActivity().findViewById(R.id.txt_message);
 
-        btn_join = getActivity().findViewById(R.id.btn_vt_join);
+        rv_chats = getActivity().findViewById(R.id.rv_vt_chatsView);
+
+        iv_vt_tripdp = getActivity().findViewById(R.id.iv_vt_dp);
         Picasso.get().load(trip.getImageUrl()).into(iv_vt_tripdp);
 
+        //Set values
         lbl_vt_tripTitle.setText(trip.getTitle());
         lbl_vt_location.setText(trip.getLocation());
         lbl_vt_createdBy.setText("Created by: " + trip.getCreatedBy());
@@ -111,10 +122,18 @@ public class ViewTripFragment extends Fragment implements MessageRecyclerAdapter
             @Override
             public void onClick(View view) {
 
+                if(btn_join.getText().toString().equalsIgnoreCase("leave")){
+
+                    leaveTrip();
+                }
+
+                else {
+                    joinTrip();
+                    enableChatroom();
+                }
+
             }
         });
-
-        btn_back = getActivity().findViewById(R.id.btn_vt_back);
 
         btn_back.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -151,17 +170,16 @@ public class ViewTripFragment extends Fragment implements MessageRecyclerAdapter
             }
         });
 
-        chats = new ArrayList<>();
+        if(isUserMemberOfCurrentTrip()){
+            enableChatroom();
+        }
+        else {
+            disableChatroom();
+        }
 
-        messageRecyclerAdapter = new MessageRecyclerAdapter(chats,this,currentUsername);
-        rv_chats = getActivity().findViewById(R.id.rv_vt_chatsView);
-        rv_chats.setLayoutManager(new LinearLayoutManager(getActivity()));
-        rv_chats.setAdapter(messageRecyclerAdapter);
-        populateChats();
 
 
         //set btn_attach onClick
-        btn_attach = getActivity().findViewById(R.id.btn_vt_attachImage);
         btn_attach.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -172,11 +190,125 @@ public class ViewTripFragment extends Fragment implements MessageRecyclerAdapter
         });
     }
 
+    private void joinTrip() {
+        //Add the trip in the user
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        WriteBatch batch = db.batch();
+        DocumentReference userUpdateRef = db.collection("profiles").
+                document(currentUsername);
+        batch.update(userUpdateRef, "tripsAddedTo", FieldValue.arrayUnion(trip.getTitle()));
+
+        //Add user to trip
+        DocumentReference tripUpdateRef = db.collection("trips").
+                document(trip.getTitle());
+        batch.update(tripUpdateRef, "members", FieldValue.arrayUnion(currentUsername));
+
+
+        batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
+            @Override
+            public void onComplete(@NonNull Task<Void> task) {
+                if(task.isSuccessful()){
+                    Toast.makeText(getContext(), "Trip joined successfully!", Toast.LENGTH_SHORT).show();
+                }
+
+            }
+        });
+    }
+
+    private void leaveTrip() {
+
+        if(currentUsername.equals(trip.getCreatedBy())){
+
+            final AlertDialog.Builder confirmationDialog = new AlertDialog.Builder(getContext());
+            confirmationDialog.setTitle("Caution!");
+            confirmationDialog.setMessage("You are the creator of this trip." +
+                    "Leaving the trip will permanently delete all the trip information including chats." +
+                    "Are you sure to leave this trip and delete all its contents?");
+            confirmationDialog.setPositiveButton("YES, Leave!", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface arg0, int arg1) {
+                    FirebaseFirestore db = FirebaseFirestore.getInstance();
+                    WriteBatch batch = db.batch();
+
+
+
+                    //Remove snapshotListener on chats
+                    chatListnerResgistration.remove();
+
+                    //Remove trips from all users added
+                    //For all users added to trip, get username and batch update the documents
+                    for (String user:trip.getMembers()) {
+                        DocumentReference userUpdateRef = db.collection("profiles").
+                                document(user);
+                        batch.update(userUpdateRef,
+                                "tripsAddedTo",
+                                FieldValue.arrayRemove(trip.getTitle()));
+                    }
+
+                    //Remove the chatroom
+                    DocumentReference chatroomDeleteRef = db.collection("chatrooms").
+                            document(trip.getTitle());
+                    batch.delete(chatroomDeleteRef);
+
+                    //Remove the trip
+                    DocumentReference tripDeleteRef = db.collection("trips").
+                            document(trip.getTitle());
+                    batch.delete(tripDeleteRef);
+
+
+                    batch.commit().addOnCompleteListener(new OnCompleteListener<Void>() {
+                        @Override
+                        public void onComplete(@NonNull Task<Void> task) {
+                            if(task.isSuccessful()){
+                                Toast.makeText(getContext(), "Trip removed successfully!", Toast.LENGTH_SHORT).show();
+                                mListener.onTripLeftByCreator();
+                            }
+                        }
+                    });
+
+                }});
+            confirmationDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+
+                public void onClick(DialogInterface arg0, int arg1) {
+
+                }});
+            confirmationDialog.show();
+        }
+        //If current user is not a creator, remove user from the trip only
+        else{
+            final AlertDialog.Builder confirmationDialog = new AlertDialog.Builder(getContext());
+            confirmationDialog.setTitle("Confirm Action");
+            confirmationDialog.setMessage("Are you sure to leave this trip?");
+            confirmationDialog.setPositiveButton("YES, Leave!", new DialogInterface.OnClickListener() {
+
+                public void onClick(DialogInterface arg0, int arg1) {
+
+                    FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+                    //remove member from the trip
+                    db.collection("trips").document(trip.getTitle())
+                            .update("members",FieldValue.arrayRemove(currentUsername));
+
+                    //Remove trip from user profile
+                    db.collection("profiles").document(currentUsername)
+                            .update("tripsAddedTo",FieldValue.arrayRemove(trip.getTitle()));
+
+                    //Disable chatroom
+                    disableChatroom();
+                }});
+            confirmationDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+
+                public void onClick(DialogInterface arg0, int arg1) {
+
+                }});
+            confirmationDialog.show();
+        }
+    }
+
     private void populateChats() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-        db.collection("chatrooms")
-                .document(trip.getTitle())
-                .addSnapshotListener(new EventListener<DocumentSnapshot>() {
+        DocumentReference doc = db.collection("chatrooms")
+                .document(trip.getTitle());
+        chatListnerResgistration = doc.addSnapshotListener(new EventListener<DocumentSnapshot>() {
                     @Override
                     public void onEvent(@javax.annotation.Nullable DocumentSnapshot documentSnapshot, @javax.annotation.Nullable FirebaseFirestoreException e) {
                         if(e!=null){
@@ -255,6 +387,39 @@ public class ViewTripFragment extends Fragment implements MessageRecyclerAdapter
         });
     }
 
+    private boolean isUserMemberOfCurrentTrip(){
+
+        if(trip.getMembers().contains(currentUsername))
+            return true;
+        return false;
+    }
+
+    private void enableChatroom(){
+        txt_message.setVisibility(View.VISIBLE);
+        btn_send.setVisibility(View.VISIBLE);
+        btn_attach.setVisibility(View.VISIBLE);
+        rv_chats.setVisibility(View.VISIBLE);
+        btn_join.setText("leave");
+        getActivity().findViewById(R.id.lbl_alertToJoinTrip).setVisibility(View.GONE);
+
+        chats = new ArrayList<>();
+        messageRecyclerAdapter = new MessageRecyclerAdapter(chats,this,currentUsername);
+        rv_chats = getActivity().findViewById(R.id.rv_vt_chatsView);
+        rv_chats.setLayoutManager(new LinearLayoutManager(getActivity()));
+        rv_chats.setAdapter(messageRecyclerAdapter);
+        populateChats();
+
+    }
+
+    private void disableChatroom(){
+        getActivity().findViewById(R.id.lbl_alertToJoinTrip).setVisibility(View.VISIBLE);
+        txt_message.setVisibility(View.GONE);
+        btn_send.setVisibility(View.GONE);
+        btn_attach.setVisibility(View.GONE);
+        btn_join.setText("join");
+        rv_chats.setVisibility(View.GONE);
+    }
+
     /**Private methods end**/
 
 
@@ -264,7 +429,7 @@ public class ViewTripFragment extends Fragment implements MessageRecyclerAdapter
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-        getActivity().setTitle("Trip Planner - View Trip details");
+        getActivity().setTitle("Trip Planner - View Trip Details");
         init();
     }
 
@@ -287,7 +452,7 @@ public class ViewTripFragment extends Fragment implements MessageRecyclerAdapter
                 final Uri attachment = data.getData();
 
                 final AlertDialog.Builder confirmationDialog = new AlertDialog.Builder(getContext());
-                confirmationDialog.setTitle("Confirm action");
+                confirmationDialog.setTitle("Confirm Action");
                 confirmationDialog.setMessage("Are you sure to attach this image?");
                 confirmationDialog.setPositiveButton("YES, Send!", new DialogInterface.OnClickListener() {
 
@@ -357,7 +522,7 @@ public class ViewTripFragment extends Fragment implements MessageRecyclerAdapter
      */
     public interface OnFragmentInteractionListener {
         // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
+        void onTripLeftByCreator();
         void onBackButtonClicked();
     }
 }
