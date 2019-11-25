@@ -22,7 +22,8 @@ public class Message {
         this.timestamp = map.get("timestamp").toString();
         this.messageType = map.get("messageType").toString();
         this.content = map.get("content").toString();
-        this.tripName = map.get("tripName").toString();
+        this.sender = map.get("sender").toString();
+        //this.tripName = map.get("tripName").toString();
     }
 
     public HashMap<String,Object> getMessageMap(){

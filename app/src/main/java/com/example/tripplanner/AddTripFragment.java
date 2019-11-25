@@ -257,6 +257,7 @@ public class AddTripFragment extends Fragment {
                         msg.setTimestamp(new Timestamp(new Date().getTime()).toString());
                         messages.add(msg);
                         Map<String, List<Message>> chatroomObj =  new HashMap<>();
+
                         chatroomObj.put("messages",messages);
                         DocumentReference chatRoomRef = db.collection("chatrooms").
                                 document(trip.getTitle());

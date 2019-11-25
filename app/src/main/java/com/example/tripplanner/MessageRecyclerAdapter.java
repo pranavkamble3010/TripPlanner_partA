@@ -1,11 +1,17 @@
 package com.example.tripplanner;
+import android.graphics.Color;
+import android.graphics.Path;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.squareup.picasso.Picasso;
@@ -18,7 +24,7 @@ public class MessageRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.Vi
     private String username;
 
     public interface MessageInteractionListener {
-        void onJoinButtonClick(String tripTitle);
+        void onChatClick(String tripTitle);
         void onTripCardClick(Trip trip);
     }
 
@@ -38,7 +44,7 @@ public class MessageRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.Vi
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
 
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.trip_item_layout,parent,false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.message_item_layout,parent,false);
 
         MyHolder myHolder = new MyHolder(view);
 
@@ -58,11 +64,20 @@ public class MessageRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.Vi
         else {
             tempMyHolder.iv_message.setVisibility(View.INVISIBLE);
             tempMyHolder.lbl_content.setVisibility(View.VISIBLE);
-
+            tempMyHolder.lbl_content.setText(resources.get(position).getContent());
         }
 
-        tempMyHolder.lbl_timestamp.setText(resources.get(position).getTimestamp().toString());
+        tempMyHolder.lbl_timestamp.setText(resources.get(position).getTimestamp());
         tempMyHolder.lbl_sender.setText(resources.get(position).getSender());
+
+        if(resources.get(position).getSender().equals(username)){
+            //tempMyHolder.cardView.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_END);
+            tempMyHolder.lbl_sender.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_END);
+            tempMyHolder.lbl_content.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_END);
+            tempMyHolder.lbl_timestamp.setTextAlignment(View.TEXT_ALIGNMENT_TEXT_END);
+            tempMyHolder.cardView.setBackgroundColor(Color.LTGRAY);
+            tempMyHolder.lbl_sender.append(" (You):");
+        }
     }
 
     @Override

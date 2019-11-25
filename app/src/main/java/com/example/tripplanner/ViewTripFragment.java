@@ -1,13 +1,21 @@
 package com.example.tripplanner;
 
+import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,17 +24,33 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.util.Base64Utils;
+import com.google.android.gms.tasks.Continuation;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.squareup.picasso.Picasso;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 
 
 /**
@@ -35,8 +59,9 @@ import java.util.HashMap;
  * {@link ViewTripFragment.OnFragmentInteractionListener} interface
  * to handle interaction events.
  */
-public class ViewTripFragment extends Fragment {
+public class ViewTripFragment extends Fragment implements MessageRecyclerAdapter.MessageInteractionListener{
 
+    private static final int REQ_IMAGE_INTENT = 300;
     /**Private attributes**/
 
     private OnFragmentInteractionListener mListener;
@@ -46,7 +71,10 @@ public class ViewTripFragment extends Fragment {
     private Button btn_send;
     private Button btn_attach;
     private Button btn_back;
+
+    private MessageRecyclerAdapter messageRecyclerAdapter;
     private RecyclerView rv_chats;
+    private List<Message> chats;
 
     private TextView lbl_vt_tripTitle;
     private TextView lbl_vt_createdBy;
@@ -56,23 +84,9 @@ public class ViewTripFragment extends Fragment {
 
     private String currentUsername;
 
-    /**Private attributes**/
+    /**Private attributes end**/
 
     /**Private methods**/
-
-    /**Private methods end**/
-
-
-    /**Editable area**/
-
-    @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-
-        getActivity().setTitle("Trip Planner - View Trip details");
-        init();
-    }
-
     private void init() {
 
         FirebaseAuth mAuth = FirebaseAuth.getInstance();
@@ -109,6 +123,7 @@ public class ViewTripFragment extends Fragment {
             }
         });
 
+        //Set btn_send onclick
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -120,8 +135,7 @@ public class ViewTripFragment extends Fragment {
                     //set timestamp at the time of sending the message
                     message.setTimestamp(new Timestamp(new Date().getTime()).toString());
 
-                    /*HashMap<String,Message> msg = new HashMap<>();
-                    msg.put(message.getTimestamp(),message);*/
+                    txt_message.setText("");
 
                     FirebaseFirestore db = FirebaseFirestore.getInstance();
                     db.collection("chatrooms")
@@ -137,14 +151,161 @@ public class ViewTripFragment extends Fragment {
             }
         });
 
+        chats = new ArrayList<>();
 
+        messageRecyclerAdapter = new MessageRecyclerAdapter(chats,this,currentUsername);
+        rv_chats = getActivity().findViewById(R.id.rv_vt_chatsView);
+        rv_chats.setLayoutManager(new LinearLayoutManager(getActivity()));
+        rv_chats.setAdapter(messageRecyclerAdapter);
+        populateChats();
+
+
+        //set btn_attach onClick
+        btn_attach = getActivity().findViewById(R.id.btn_vt_attachImage);
+        btn_attach.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                intent.setType("image/*");
+                startActivityForResult(intent,REQ_IMAGE_INTENT);
+            }
+        });
     }
+
+    private void populateChats() {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection("chatrooms")
+                .document(trip.getTitle())
+                .addSnapshotListener(new EventListener<DocumentSnapshot>() {
+                    @Override
+                    public void onEvent(@javax.annotation.Nullable DocumentSnapshot documentSnapshot, @javax.annotation.Nullable FirebaseFirestoreException e) {
+                        if(e!=null){
+                            return;
+                        }
+                        else {
+                            chats.clear();
+                            ArrayList<Object> realtimeChats = (ArrayList<Object>)documentSnapshot.getData().get("messages");
+                            Log.d("Realtime", "onEvent: new msgs"+realtimeChats);
+                            //chats.addAll(realtimeChats);
+                            for (Object message:realtimeChats) {
+                                Message temp = new Message((HashMap<String, Object>) message);
+                                chats.add(temp);
+                            }
+                            messageRecyclerAdapter.notifyDataSetChanged();
+                            rv_chats.smoothScrollToPosition(chats.size()-1);
+                        }
+                    }
+                });
+    }
+
+    private void sendImage(Uri imageUri) {
+        FirebaseStorage firebaseStorage = FirebaseStorage.getInstance();
+        Bitmap image = null;
+        try
+        {
+            image = MediaStore.Images.Media.getBitmap(getActivity().getContentResolver(), imageUri);
+            //Log.d("dp_uri", "signUpUser: dp_uri"+imageUri);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        StorageReference rootDirRef = firebaseStorage.getReference().child("chatroom_shared_pics");
+        final StorageReference imageRef = rootDirRef.child(java.util.UUID.randomUUID().toString()+".png");
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        image.compress(Bitmap.CompressFormat.PNG,50,baos);
+
+        byte[] imageByteArray = baos.toByteArray();
+
+        UploadTask uploadTask = imageRef.putBytes(imageByteArray);
+
+        uploadTask.continueWithTask(new Continuation<UploadTask.TaskSnapshot, Task<Uri>>() {
+            @Override
+            public Task<Uri> then(@NonNull Task<UploadTask.TaskSnapshot> task) throws Exception {
+                if(!task.isSuccessful()){
+                    throw task.getException();
+                }
+                else
+                    return imageRef.getDownloadUrl();
+            }
+        }).addOnCompleteListener(new OnCompleteListener<Uri>() {
+            @Override
+            public void onComplete(@NonNull Task<Uri> task) {
+                if(task.isSuccessful()){
+                    final Message message = new Message();
+                    //Set image Url in the message content
+                    message.setContent(task.getResult().toString());
+                    message.setMessageType("image");
+                    message.setSender(currentUsername);
+                    //set timestamp at the time of sending the message
+                    message.setTimestamp(new Timestamp(new Date().getTime()).toString());
+
+                    FirebaseFirestore db = FirebaseFirestore.getInstance();
+                    db.collection("chatrooms")
+                            .document(trip.getTitle())
+                            .update("messages",FieldValue.arrayUnion(message.getMessageMap()))
+                            .addOnSuccessListener(new OnSuccessListener<Void>() {
+                                @Override
+                                public void onSuccess(Void aVoid) {
+                                    Log.d("viewtripfrag", "onSuccess: image updated");
+                                }
+                            });
+                }
+            }
+        });
+    }
+
+    /**Private methods end**/
+
+
+    /**Editable area**/
+
+    @Override
+    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
+        super.onActivityCreated(savedInstanceState);
+
+        getActivity().setTitle("Trip Planner - View Trip details");
+        init();
+    }
+
+
 
 
     public ViewTripFragment(Trip trip) {
         // Required empty public constructor
         this.trip = trip;
     }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        //super.onActivityResult(requestCode, resultCode, data);
+
+        if(resultCode == Activity.RESULT_OK){
+            if(requestCode == REQ_IMAGE_INTENT){
+
+                //Get the image and upload to the firebase storage
+                final Uri attachment = data.getData();
+
+                final AlertDialog.Builder confirmationDialog = new AlertDialog.Builder(getContext());
+                confirmationDialog.setTitle("Confirm action");
+                confirmationDialog.setMessage("Are you sure to attach this image?");
+                confirmationDialog.setPositiveButton("YES, Send!", new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface arg0, int arg1) {
+                        sendImage(attachment);
+                    }});
+                confirmationDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface arg0, int arg1) {
+
+                    }});
+                confirmationDialog.show();
+
+                //imageUpdated = true;
+            }
+        }
+    }
+
 
 
     /**Editable area end**/
@@ -172,6 +333,16 @@ public class ViewTripFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+    }
+
+    @Override
+    public void onChatClick(String tripTitle) {
+
+    }
+
+    @Override
+    public void onTripCardClick(Trip trip) {
+
     }
 
     /**
