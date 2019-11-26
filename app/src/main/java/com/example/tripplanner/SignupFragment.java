@@ -1,6 +1,7 @@
 package com.example.tripplanner;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -97,13 +98,26 @@ public class SignupFragment extends Fragment {
         final String email = txt_su_username.getText().toString();
         String password = txt_su_password.getText().toString();
 
+        //Set progress dialog
+        final ProgressDialog progressDialog = new ProgressDialog(getContext());
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialog.setCancelable(false);
+        progressDialog.setMessage("Loading profile");
+        progressDialog.show();
+
         //Create account in firebase authetication
         mAuth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener(getActivity(), new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         if(task.isSuccessful()){
+                            progressDialog.dismiss();
                             mListener.signUp_onSignUpSuccessful();
+                        }
+                        else {
+                            btn_su_signUp.setEnabled(true);
+                            btn_su_cancel.setEnabled(true);
+                            Toast.makeText(getContext(), "Some error occured! Try again.", Toast.LENGTH_SHORT).show();
                         }
                     }
                 });

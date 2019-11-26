@@ -1,5 +1,6 @@
 package com.example.tripplanner;
 
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.Bundle;
 
@@ -76,6 +77,14 @@ public class LoginFragment extends Fragment {
     }
 
     private void login(){
+
+        //start progress dialog
+        final ProgressDialog progressDialog = new ProgressDialog(getContext());
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialog.setCancelable(false);
+        progressDialog.setMessage("Authenticating user");
+        progressDialog.show();
+
         FirebaseAuth mAuth = FirebaseAuth.getInstance();
         String email = txt_username.getText().toString();
         String password = txt_password.getText().toString();
@@ -87,8 +96,10 @@ public class LoginFragment extends Fragment {
                         if (task.isSuccessful()) {
                             // Sign in success, update UI with the signed-in user's information
                             Log.d("Login", "signInWithEmail:success");
+                            progressDialog.dismiss();
                             mListener.login_OnLoginSuccessful();
                         } else {
+                            progressDialog.dismiss();
                             // If sign in fails, display a message to the user.
                             Log.w("Login", "signInWithEmail:failure", task.getException());
                             Toast.makeText(getActivity(), "Authentication failed.",

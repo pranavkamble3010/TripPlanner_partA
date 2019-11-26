@@ -1,6 +1,9 @@
 package com.example.tripplanner;
 
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.net.Uri;
 import android.os.Bundle;
 
@@ -90,6 +93,13 @@ public class ViewProfileFragment extends Fragment implements TripsRecyclerAdapte
         FirebaseAuth mAuth = FirebaseAuth.getInstance();
         FirebaseUser currentUser = mAuth.getCurrentUser();
 
+        //Set progress dialog
+        final ProgressDialog progressDialog = new ProgressDialog(getContext());
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialog.setCancelable(false);
+        progressDialog.setMessage("Loading profile");
+        progressDialog.show();
+
         //Get user details from database
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection("profiles")
@@ -109,6 +119,9 @@ public class ViewProfileFragment extends Fragment implements TripsRecyclerAdapte
                                 lbl_name.setText(user.getFname()+" "+user.getLname());
                                 lbl_gender.setText(user.getGender());
                                 lbl_username.setText(user.getUsername());
+
+                                //Dismiss progress dialog
+                                progressDialog.dismiss();
 
                                 //Populate trips data
                                 populateRecyclerView();
@@ -139,10 +152,24 @@ public class ViewProfileFragment extends Fragment implements TripsRecyclerAdapte
         btn_signout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                FirebaseAuth mAuth = FirebaseAuth.getInstance();
-                mAuth.signOut();
-                Toast.makeText(getContext(), "User signed out successfully!", Toast.LENGTH_SHORT).show();
-                mListener.signoutClicked();
+
+                final AlertDialog.Builder confirmationDialog = new AlertDialog.Builder(getContext());
+                confirmationDialog.setTitle("Confirm Action");
+                confirmationDialog.setMessage("Are you sure to sign out of TripPlanner app?");
+                confirmationDialog.setPositiveButton("YES, Sign out!", new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface arg0, int arg1) {
+                        FirebaseAuth mAuth = FirebaseAuth.getInstance();
+                        mAuth.signOut();
+                        Toast.makeText(getContext(), "User signed out successfully!", Toast.LENGTH_SHORT).show();
+                        mListener.signoutClicked();
+                    }});
+                confirmationDialog.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+
+                    public void onClick(DialogInterface arg0, int arg1) {
+
+                    }});
+                confirmationDialog.show();
             }
         });
     }
