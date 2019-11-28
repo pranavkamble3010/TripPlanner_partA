@@ -102,7 +102,7 @@ public class SignupFragment extends Fragment {
         final ProgressDialog progressDialog = new ProgressDialog(getContext());
         progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
         progressDialog.setCancelable(false);
-        progressDialog.setMessage("Loading profile");
+        progressDialog.setMessage("Signing up...");
         progressDialog.show();
 
         //Create account in firebase authetication
@@ -110,14 +110,16 @@ public class SignupFragment extends Fragment {
                 .addOnCompleteListener(getActivity(), new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
+
+                        progressDialog.dismiss();
                         if(task.isSuccessful()){
-                            progressDialog.dismiss();
                             mListener.signUp_onSignUpSuccessful();
                         }
                         else {
                             btn_su_signUp.setEnabled(true);
                             btn_su_cancel.setEnabled(true);
-                            Toast.makeText(getContext(), "Some error occured! Try again.", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(getContext(), "Error signing up! " +
+                                    task.getException().getMessage(), Toast.LENGTH_LONG).show();
                         }
                     }
                 });

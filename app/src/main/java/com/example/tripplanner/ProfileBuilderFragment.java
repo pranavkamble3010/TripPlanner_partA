@@ -1,6 +1,7 @@
 package com.example.tripplanner;
 
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -65,7 +66,7 @@ public class ProfileBuilderFragment extends Fragment {
     private RadioButton rb_female;
 
     private static final int REQ_IMAGE_INTENT = 300;
-    private Uri display_pic_uri;
+    private Uri display_pic_uri = null;
     private User user;
     private boolean imageUpdated = false;
     /**Private attributes end **/
@@ -156,8 +157,9 @@ public class ProfileBuilderFragment extends Fragment {
         btn_save.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                updateProfilePhase1();
-
+                if(validate()){
+                    updateProfilePhase1();
+                }
             }
         });
 
@@ -200,6 +202,14 @@ public class ProfileBuilderFragment extends Fragment {
     private void updateProfilePhase1() {
         //Check if image was updated. This check is required for 'edit profile' option.
         if(imageUpdated){
+
+            //Set progress dialog
+            final ProgressDialog progressDialog = new ProgressDialog(getContext());
+            progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+            progressDialog.setCancelable(false);
+            progressDialog.setMessage("Saving display pic");
+            progressDialog.show();
+
             FirebaseStorage firebaseStorage = FirebaseStorage.getInstance();
             Bitmap image = null;
             try
@@ -233,6 +243,7 @@ public class ProfileBuilderFragment extends Fragment {
                 @Override
                 public void onComplete(@NonNull Task<Uri> task) {
                     if(task.isSuccessful()){
+                        progressDialog.dismiss();
                         updateProfilePhase2(task.getResult().toString());
                     }
                 }
@@ -249,6 +260,14 @@ public class ProfileBuilderFragment extends Fragment {
         user.setImageUrl(downloadUrl);
         user.setFname(txt_su_fname.getText().toString());
         user.setLname(txt_su_lname.getText().toString());
+
+        //Set progress dialog
+        final ProgressDialog progressDialog = new ProgressDialog(getContext());
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialog.setCancelable(false);
+        progressDialog.setMessage("Saving profile");
+        progressDialog.show();
+
         //firebase DB instance
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection("profiles")
@@ -257,6 +276,8 @@ public class ProfileBuilderFragment extends Fragment {
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
+
+                        progressDialog.dismiss();
                         Log.d("Update profile", "Profile saved successfully!"+user.toString());
                         Toast.makeText(getContext(),
                                 "Profile saved successfully!", Toast.LENGTH_SHORT).show();
