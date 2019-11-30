@@ -21,6 +21,8 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 
+import java.util.regex.Pattern;
+
 
 /**
  * A simple {@link Fragment} subclass.
@@ -120,16 +122,23 @@ public class LoginFragment extends Fragment {
 
         Boolean validFlag = true;
 
+        String emailChecker = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
+        Pattern pattern = Pattern.compile(emailChecker);
+
         if (txt_username.getText().toString().equals("") || txt_username.getText().toString().equals(null)){
             txt_username.setError("Username cannot be empty!");
             validFlag = false;
-        }
+        } else if(!pattern.matcher(txt_username.getText().toString().trim()).matches()){
+                txt_username.setError("Invalid Email");
+                validFlag = false;
+            }
 
         if (txt_password.getText().toString().equals("") || txt_password.getText().toString().equals(null)){
             txt_password.setError("Password cannot be empty!");
-
             validFlag = false;
-
+        } else if(txt_password.getText().toString().trim().length() < 8){
+            txt_password.setError("Password must be of 8 letters");
+            validFlag = false;
         }
 
         return validFlag;

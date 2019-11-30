@@ -146,7 +146,12 @@ public class ViewTripFragment extends Fragment implements MessageRecyclerAdapter
         btn_send.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(!txt_message.getText().toString().equals("") || !txt_message.getText().toString().equals(null)){
+
+                if(txt_message.getText().toString() == null || txt_message.getText().toString().trim().isEmpty() || txt_message.getText().toString().trim().equals("")){
+                    txt_message.setError("Empty Message");
+                    return;
+                }
+                if( txt_message.getText().toString() != null || !txt_message.getText().toString().trim().isEmpty()  ){
                     final Message message = new Message();
                     message.setContent(txt_message.getText().toString());
                     message.setMessageType("text");
