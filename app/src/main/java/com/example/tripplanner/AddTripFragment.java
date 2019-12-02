@@ -290,14 +290,43 @@ public class AddTripFragment extends Fragment {
 
         boolean validFlag = true;
 
-        if(txt_trip_title.getText().toString().equals("") || txt_trip_title.getText().toString().equals(null)){
+        if(txt_trip_title.getText().toString().equals(null) || txt_trip_title.getText().toString().equals("") ){
             txt_trip_title.setError("Trip title cannot be empty!");
             validFlag = false;
         }
 
-        if(txt_trip_location.getText().toString().equals("") || txt_trip_location.getText().toString().equals(null)){
+        if(txt_trip_location.getText().toString().equals(null) || txt_trip_location.getText().toString().equals("") ){
             txt_trip_location.setError("Trip location cannot be empty!");
             validFlag = false;
+        }
+
+        // validating if lat log
+        if( txt_trip_location.getText().toString() != null && !txt_trip_location.getText().toString().trim().equals("")){
+            String loc = txt_trip_location.getText().toString().trim();
+            Log.d("Demo", "Location - "+loc);
+            if(loc.contains(",")){
+                String[] strArray = loc.split(",");
+                double lat=0, lan=0;
+                try{
+                     lat = Double.parseDouble(strArray[0].trim());
+                     lan = Double.parseDouble(strArray[1].trim());
+
+                    Log.d("Demo", "Lat - "+lat+"Lan - "+lan);
+                    // validate for lat lan
+                    if ( (lat < -90 || lat > 90))
+                    {
+                        txt_trip_location.setError("Invalid Latitude!");
+                        validFlag = false;
+                    }
+                    if ((lan < -180 || lan > 180))
+                    {
+                        txt_trip_location.setError("Invalid Longitude!");
+                        validFlag = false;
+                    }
+                } catch (NumberFormatException e){
+
+                }
+            }
         }
 
         if(trip_dp_uri == null){
