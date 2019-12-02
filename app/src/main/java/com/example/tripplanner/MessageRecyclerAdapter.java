@@ -1,6 +1,7 @@
 package com.example.tripplanner;
 import android.graphics.Color;
 import android.graphics.Path;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -16,6 +17,11 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.squareup.picasso.Picasso;
 
+import org.ocpsoft.prettytime.PrettyTime;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 public class MessageRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
@@ -66,8 +72,21 @@ public class MessageRecyclerAdapter extends RecyclerView.Adapter<RecyclerView.Vi
             tempMyHolder.lbl_content.setVisibility(View.VISIBLE);
             tempMyHolder.lbl_content.setText(resources.get(position).getContent());
         }
+        PrettyTime p = new PrettyTime();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+        Date date = null;
+        try {
+             date = sdf.parse(resources.get(position).getTimestamp().trim());
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
 
-        tempMyHolder.lbl_timestamp.setText(resources.get(position).getTimestamp());
+//        Log.d("Demo", "Time - "+date);
+//        Log.d("Demo", "Time P- "+p.format(date));
+
+        String pTime = p.format(date);
+
+        tempMyHolder.lbl_timestamp.setText(pTime);
         tempMyHolder.lbl_sender.setText(resources.get(position).getSender());
 
         if(resources.get(position).getSender().equals(username)){
